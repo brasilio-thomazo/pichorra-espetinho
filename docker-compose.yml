@@ -1,0 +1,32 @@
+version: '3.8'
+services:
+  http:
+    container_name: pichorra-http
+    build: ./docker/http
+    volumes:
+      - ${PATH_API:-./gestor/api}:${VHOST_API:-/home/app/api}
+    environment:
+      - APP_USERID=${APP_USERID:-1000}
+      - APP_GROUPID=${APP_GROUPID:-1000}
+    ports:
+      - ${HTTP_PORT:-8000}:80
+    networks:
+      - app-lan
+  database:
+    container_name: pichorra-database
+    build: ./docker/database
+    environment:
+      - APP_USERID=${APP_USERID:-1000}
+      - APP_GROUPID=${APP_GROUPID:-1000}
+      - ROOT_PASSWORD=${ROOT_PASSWORD:-root}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redis}
+      - POSTGRESQL_USER=${POSTGRESQL_USER:-postgres}
+      - POSTGRESQL_PASSWORD=${POSTGRESQL_PASSWORD:-postgres}
+    volumes:
+      - ./data/pgsql:/var/lib/postgresql
+      - ./data/mysql:/var/lib/mysql
+    networks:
+      - app-lan
+networks:
+  app-lan:
+    driver: bridge

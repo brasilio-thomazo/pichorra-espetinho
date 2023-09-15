@@ -1,0 +1,96 @@
+@import url("https://fonts.googleapis.com/css2?family=Ms+Madi&display=swap");
+
+body {
+  background: #1d1d1d;
+  color: #ccc;
+}
+
+#main {
+  font-family: "Ms Madi", cursive;
+}
+
+#menu {
+  font-family: "Ms Madi", cursive;
+  .category {
+    padding: 5px 0px;
+    .category-name {
+      font-size: 2rem;
+    }
+
+    .subcategories {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      row-gap: 5px;
+      .subcategory {
+        color: #ccc;
+        text-decoration: none;
+        text-align: center;
+        max-width: 100px;
+        img {
+          max-width: 100px;
+          max-height: 100px;
+        }
+        .subcategory-name {
+          font-size: 1.5rem;
+        }
+      }
+    }
+  }
+}
+
+#category {
+  .name {
+    font-size: 2rem;
+  }
+}
+
+.products {
+  .product {
+    display: flex;
+    row-gap: 5px;
+    column-gap: 5px;
+    margin-bottom: 10px;
+    img {
+      max-width: 100px;
+      max-height: 100px;
+    }
+    .data {
+      width: 100%;
+      .title {
+        font-size: 1rem;
+        text-transform: uppercase;
+        font-weight: bold;
+      }
+      .description {
+        font-size: .9rem;
+        min-height: 40px;
+      }
+      .prices {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: flex-end;
+        width: 100%;
+        border-bottom: 1px solid #666;
+        .price {
+          display: flex;
+          margin: 5px;
+          font-size: .9rem;
+          .type {
+            background-color: #ccc;
+            color: #1d1d1d;
+            border-radius: 5px 0px 0px 5px;
+            padding: 2px;
+            text-transform: uppercase;
+          }
+          .value {
+            background-color: crimson;
+            border-radius: 0px 5px 5px 0px;
+            padding: 2px;
+          }
+        }
+      }
+    }
+  }
+}

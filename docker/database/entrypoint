@@ -1,0 +1,101 @@
+#!/bin/bash
+
+mysql_pid_file='/var/run/mysql/mysqld.pid'
+pgsql_pid_file='/var/run/postgresql/postgresql.pid'
+mysql_data_dir='/var/lib/mysql'
+pgsql_data_dir='/var/lib/postgresql/'
+
+if [ -z $ROOT_PASSWORD ]; then
+    export ROOT_PASSWORD='root'
+fi
+
+if [ -z $POSTGRESQL_USER ]; then
+    export POSTGRESQL_USER='postgres'
+fi
+
+if [ -z $POSTGRESQL_PASSWORD ]; then
+    export POSTGRESQL_PASSWORD='postgres'
+fi
+
+if [ ! -d "$mysql_data_dir" ]; then
+    doas mkdir -p $mysql_data_dir
+fi
+
+if [ -d "$mysql_data_dir" ]; then
+    doas chown app:app $mysql_data_dir -R
+fi
+
+if [ ! -d "$pgsql_data_dir" ]; then
+    doas mkdir -p $pgsql_data_dir
+fi
+
+if [ -d "$pgsql_data_dir" ]; then
+    doas chown app:app $pgsql_data_dir -R
+fi
+
+if [ -z $(ls -A $mysql_data_dir) ]; then
+    mysql_install_db
+fi
+
+if [ -z $(ls -A $pgsql_data_dir) ]; then
+    initdb -D $pgsql_data_dir --auth-local=trust --auth-host=scram-sha-256
+fi
+
+mariadbd &
+
+nc -z localhost 3306
+while [ $? -ne 0 ]; do
+    sleep 1
+done
+
+postgres --config-file='/etc/postgresql/postgresql.conf' &
+
+nc -z localhost 5432
+while [ $? -ne 0 ]; do
+    sleep 1
+done
+
+exists=$(mysql -se "select 1 from mysql.user where user='root' and host='%'")
+if [ "$exists" = "1" ]; then
+    mysql -e "ALTER USER 'root'@'%'  IDENTIFIED BY '$ROOT_PASSWORD'"
+else
+    mysql -e "CREATE USER 'root'@'%' IDENTIFIED BY '$ROOT_PASSWORD'"
+    mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION"
+fi
+
+if psql -d postgres -Atq -c "select usename from pg_user where usename='$POSTGRESQL_USER'" | grep -q $POSTGRESQL_USER; then
+    psql -d postgres -Atq -c "ALTER ROLE $POSTGRESQL_USER WITH PASSWORD '$POSTGRESQL_PASSWORD'"
+else
+    psql -d postgres -Atq -c "CREATE ROLE $POSTGRESQL_USER SUPERUSER LOGIN PASSWORD '$POSTGRESQL_PASSWORD'"
+fi
+
+mysql_tzinfo_to_sql /usr/share/zoneinfo | doas mysql mysql
+
+if [ -f "$mysql_pid_file" ]; then
+    pid=$(cat $mysql_pid_file)
+    if [ -d "/proc/$pid" ]; then
+        kill $pid
+        while [ -d "/proc/$pid" ]; do
+            sleep 1
+        done
+    fi
+fi
+
+if [ -f "$pgsql_pid_file" ]; then
+    pid=$(cat $pgsql_pid_file)
+    if [ -d "/proc/$pid" ]; then
+        kill $pid
+        while [ -d "/proc/$pid" ]; do
+            sleep 1
+        done
+    fi
+fi
+
+if [ ! -z $REDIS_PASSWORD ]; then
+    sed -i 's/requirepass .*/requirepass $REDIS_PASSWORD/' '/etc/redis.conf'
+fi
+
+mariadbd --default-time-zone=America/Sao_Paulo &
+postgres --config-file='/etc/postgresql/postgresql.conf' &
+doas redis-server /etc/redis.conf &
+memcached

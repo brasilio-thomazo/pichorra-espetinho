@@ -1,0 +1,5 @@
+backup.sql
+.env
+.vscode
+package-lock.json
+composer.lock
